@@ -1,37 +1,72 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
-        <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
-        <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-        <script src="https://raw.githack.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
-    </head>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
+    
+    <script>
+      // Proximity Checker Component: Shows model only when near target coordinates
+      AFRAME.registerComponent('proximity-checker', {
+        schema: {
+          targetLat: { type: 'number', default: 35.4464283 },
+          targetLng: { type: 'number', default: 139.6325870 },
+          radius: { type: 'number', default: 0.0005 } // ~50 meters (adjust as needed)
+        },
+        init() {
+          this.camera = document.querySelector('[gps-camera]');
+          this.model = this.el;
+          this.model.setAttribute('visible', 'false'); // Hide initially
+        },
+        tick() {
+          const camPos = this.camera.getAttribute('position');
+          if (!camPos.x && !camPos.z) return; // Skip if GPS not ready
 
-    <body style="margin: 0; overflow: hidden;">
-        <a-scene
-            renderer="logarithmicDepthBuffer: true;"
-            embedded
-            loading-screen="enabled: false;"
-            arjs="sourceType: webcam; debugUIEnabled: false;"
-        >
-            <a-assets>
-                <a-asset-item
-                    id="animated-asset"
-                    src="assets/asset.gltf"
-                ></a-asset-item>
-            </a-assets>
+          // Calculate distance (simplified for demo; real-world may need Haversine formula)
+          const distance = Math.sqrt(
+            Math.pow(this.data.targetLat - camPos.x, 2) +
+            Math.pow(this.data.targetLng - camPos.z, 2)
+          );
 
-                <a-entity
-                    look-at="[gps-camera]"
-                    animation-mixer="loop: repeat"
-                    gltf-model="#animated-asset"
-                    scale="0.14639622628074847 0.14639622628074847 0.14639622628074847"
-                    gps-entity-place="latitude: 35.4464283; longitude: 139.6325870;"
-                ></a-entity>
+          // Toggle visibility based on proximity
+          if (distance < this.data.radius) {
+            this.model.setAttribute('visible', 'true');
+          } else {
+            this.model.setAttribute('visible', 'false');
+          }
+        }
+      });
+    </script>
+  </head>
 
-            <a-camera gps-camera rotation-reader></a-camera>
-        </a-scene>
-    </body>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene
+      renderer="logarithmicDepthBuffer: true;"
+      embedded
+      loading-screen="enabled: false;"
+      arjs="sourceType: webcam; debugUIEnabled: false;"
+    >
+      <a-assets>
+        <a-asset-item
+          id="animated-asset"
+          src="assets/asset.gltf"
+        ></a-asset-item>
+      </a-assets>
+
+      <!-- GPS Entity with Proximity Checker -->
+      <a-entity
+        look-at="[gps-camera]"
+        animation-mixer="loop: repeat"
+        gltf-model="#animated-asset"
+        scale="0.146 0.146 0.146"
+        gps-entity-place="latitude: 35.4464283; longitude: 139.6325870;"
+        proximity-checker
+      ></a-entity>
+
+      <a-camera gps-camera rotation-reader></a-camera>
+    </a-scene>
+  </body>
 </html>
